@@ -23,6 +23,14 @@ rules:
   tasks:
     - Dividir as tarefas em etapas pequenas e verificáveis para o Xano / XanoScript.
 
+operations:
+  apply:
+    guidance:
+      - Executar as verificações de endpoints no Xano e testes de regras de negócio antes de concluir as tarefas.
+  archive:
+    guidance:
+      - Confirmar que a implementação corresponde às especificações e atende aos cenários de teste definidos nas specs.
+
 business_constants:
   discount_threshold_brl: 100.00
   discount_percentage: 0.15
