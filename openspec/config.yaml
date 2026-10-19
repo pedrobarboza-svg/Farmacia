@@ -1,0 +1,24 @@
+project_name: "farmaciaFinal"
+version: "1.0.0"
+description: "Sistema de Gestao de Farmacia com PDV, controle de estoque e motor de descontos"
+
+context_files:
+  - "docs/project-overview.md"
+  - "docs/domain-model.md"
+  - "AGENTS.md"
+
+business_constants:
+  discount_threshold_brl: 100.00
+  discount_percentage: 0.15
+  currency: "BRL"
+  categories:
+    - "Remédios"
+    - "Bebidas"
+    - "Fraldas"
+    - "Produtos de Higiene"
+
+rules_enforcement:
+  require_cpf_for_discount: true
+  validate_stock_before_sale: true
+  mock_payment_gateway: true
+  
