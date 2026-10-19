@@ -4,10 +4,13 @@ project_name: "farmaciaFinal"
 version: "1.0.0"
 description: "Sistema de Gestao de Farmacia com PDV, controle de estoque e motor de descontos"
 
-context:
-  - "docs/project-overview.md"
-  - "docs/domain-model.md"
-  - "AGENTS.md"
+context: |
+  Project: Sistema de Gestão de Farmácia.
+  Domain: Gestão de catálogo (Remédios, Bebidas, Fraldas, Higiene), registo de clientes (CPF), motor de desconto (15% para compras > R$ 100,00) e controlo de stock.
+  Tech stack: Xano (Backend / XanoScript), Git, VS Code e OpenSpec.
+  Architecture: Backend responsável pelas regras de negócio e validações. Pagamento apenas simulado no front-end.
+  Development: Implementar mudanças de forma incremental utilizando a metodologia OpenSpec.
+  Language: Escrever os artefatos OpenSpec em português do Brasil.
 
 business_constants:
   discount_threshold_brl: 100.00
