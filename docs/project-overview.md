@@ -58,3 +58,7 @@ As farmácias físicas de pequeno e médio porte enfrentam desafios no controlo 
 
 ## 6. Painel de Métricas / Dashboard:**
    - Visualização do total faturado no dia, na semana e no mês.
+
+## 7. Frontend: Reflex   
+    - Reflex será utilizado como tecnologia exclusiva para implementação do frontend da aplicação.
+ 
