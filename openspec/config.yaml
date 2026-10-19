@@ -1,6 +1,7 @@
 project_name: "farmaciaFinal"
 version: "1.0.0"
-description: "Sistema de Gestao de Farmacia com PDV, controle de estoque e motor de descontos"
+description: "Sistema de Gestao de Farmacia com PDV, controle de estoque e motor
+  de descontos"
 
 context_files:
   - "docs/project-overview.md"
@@ -21,4 +22,5 @@ rules_enforcement:
   require_cpf_for_discount: true
   validate_stock_before_sale: true
   mock_payment_gateway: true
-  
+githubCopilot:
+  cloudAgent: true
