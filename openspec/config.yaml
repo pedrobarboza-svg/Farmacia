@@ -9,6 +9,7 @@ context: |
   Domain: Gestão de catálogo (Remédios, Bebidas, Fraldas, Higiene), registo de clientes (CPF), motor de desconto (15% para compras > R$ 100,00) e controlo de stock.
   Tech stack: Xano (Backend / XanoScript), Git, VS Code e OpenSpec.
   Architecture: Backend responsável pelas regras de negócio e validações. Pagamento apenas simulado no front-end.
+  Security: Autenticação de funcionários, validação obrigatória de CPF para concessão de desconto e transações atómicas para evitar inconsistência de estoque.
   Development: Implementar mudanças de forma incremental utilizando a metodologia OpenSpec.
   Language: Escrever os artefatos OpenSpec em português do Brasil.
 
