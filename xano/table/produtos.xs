@@ -3,11 +3,13 @@ table produtos {
 
   schema {
     int id
-    int categoria_id
+    int categoria_id {
+      table = "categorias"
+    }
     text nome
     text? descricao
-    decimal preco_unitario
-    int? quantidade_estoque
+    decimal preco
+    int estoque
     bool ativo?=true
   }
 

@@ -9,7 +9,7 @@ table categorias {
 
   index = [
     {type: "primary", field: [{name: "id"}]}
-    {type: "btree", field: [{name: "nome", op: "asc"}]}
+    {type: "btree|unique", field: [{name: "nome", op: "asc"}]}
   ]
 
   guid = "hm-oOaS9LFRsCyzCZcYlAmk0YBk"

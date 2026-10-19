@@ -23,7 +23,7 @@ Nenhuma. O projeto ainda não possui specs publicadas; esta mudança introduz um
 
 ## Impact
 
-- Tabelas Xano `categorias` e `produtos`, atualmente definidas em `xano/table/categorias.xs` e `xano/table/produtos.xs`.
+- Tabelas Xano `categorias`, `produtos`, `vendas` e `itens_venda`, conforme necessário para manter a venda e a baixa de estoque consistentes com os schemas versionados.
 - Endpoints Xano de categorias e produtos no grupo `Farmácia`, principalmente cadastro, edição, consulta e listagem usados pelo PDV.
 - Endpoint de venda existente, na medida necessária para validar e atualizar o estoque usando o modelo canónico. Não inclui processamento real de pagamentos.
 - Documentação do domínio, que atualmente descreve `categoria`/`produto` e campos `preco`/`estoque`; a implementação deverá reconciliar a nomenclatura publicada com a decisão desta change.

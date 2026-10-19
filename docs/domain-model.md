@@ -22,20 +22,23 @@
 | `cpf` | String | Unique, Not Null | Documento de identificação (11 dígitos numéricos) |
 | `created_at` | Timestamp | Default NOW | Data de registo do cliente |
 
-### 1.3. Tabela: `categoria`
+### 1.3. Tabela: `categorias`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
 | `id` | Integer | PK, Auto Increment | Identificador da categoria |
-| `nome` | String | Unique, Not Null | Valore possíveis: *Remédios*, *Bebidas*, *Fraldas*, *Produtos de Higiene* |
+| `nome` | String | Unique, Not Null | Nome da categoria. Categorias predefinidas: *Remédios*, *Bebidas*, *Fraldas*, *Produtos de Higiene* |
+| `descricao` | String | Nullable | Descrição opcional da categoria |
 
-### 1.4. Tabela: `produto`
+### 1.4. Tabela: `produtos`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
 | `id` | Integer | PK, Auto Increment | Identificador único do produto |
-| `categoria_id` | Integer | FK (`categoria.id`), Not Null | Categoria a que o produto pertence |
+| `categoria_id` | Integer | FK (`categorias.id`), Not Null | Categoria a que o produto pertence |
 | `nome` | String | Not Null | Nome comercial do produto |
-| `preco` | Decimal(10,2) | Not Null, $\ge 0$ | Preço unitário em Reais (R$) |
+| `descricao` | String | Nullable | Descrição opcional do produto |
+| `preco` | Decimal(10,2) | Not Null, $\ge 0$ | Preço atual em Reais (R$) |
 | `estoque` | Integer | Not Null, $\ge 0$ | Quantidade física disponível |
+| `ativo` | Boolean | Opcional, Default `true` | Indica se o produto é listado para venda no PDV |
 
 ### 1.5. Tabela: `pedido`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |
@@ -63,7 +66,7 @@
 ## 2. Cardinalidade e Mapeamento de Relacionamentos
 - **`funcionario` $\to$ `pedido`:** $1 : N$ (Um funcionário pode realizar múltiplos pedidos; cada pedido pertence a exatamente um funcionário).
 - **`cliente` $\to$ `pedido`:** $1 : N$ (Um cliente pode realizar vários pedidos; um pedido pode ter $0$ ou $1$ cliente associado).
-- **`categoria` $\to$ `produto`:** $1 : N$ (Uma categoria contém múltiplos produtos; cada produto pertence a $1$ categoria).
+- **`categorias` $\to$ `produtos`:** $1 : N$ (Uma categoria contém múltiplos produtos; cada produto pertence a $1$ categoria).
 - **`pedido` $\to$ `produto`:** $N : M$ (Intermediado pela tabela associativa `item_pedido`).
 
 ---

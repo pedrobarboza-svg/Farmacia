@@ -2,13 +2,17 @@ query produtos verb=GET {
   api_group = "Farmácia"
 
   input {
-    int categoria_id?
-    bool ativo?
+    int categoria_id? {
+      table = "categorias"
+    }
   }
 
   stack {
     db.query produtos {
-      where = ($input.categoria_id == null || $db.produtos.categoria_id == $input.categoria_id) && ($input.ativo == null || $db.produtos.ativo == $input.ativo)
+      where = $db.produtos.ativo == true && ($input.categoria_id == null || $db.produtos.categoria_id == $input.categoria_id)
+      eval = {
+        disponivel: $db.produtos.estoque > 0
+      }
       return = {type: "list"}
     } as $produtos
   }
