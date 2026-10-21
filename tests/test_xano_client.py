@@ -9,6 +9,114 @@ from farmaciaFinal import xano_client
 
 
 class XanoClientTests(unittest.IsolatedAsyncioTestCase):
+    async def test_get_cargos_uses_public_endpoint_and_parses_options(self):
+        observed = {}
+
+        def respond(request: httpx.Request) -> httpx.Response:
+            observed["request"] = request
+            return httpx.Response(
+                200,
+                json={
+                    "cargos": [
+                        {"id": 1, "nome": "Atendente"},
+                        {"id": 2, "nome": "Farmac\u00eautico"},
+                    ]
+                },
+            )
+
+        with patch.dict(
+            os.environ,
+            {
+                "XANO_API_BASE_URL":
+                    "https://x8ki-letl-twmt.n7.xano.io/api:hVU-wK41"
+            },
+        ):
+            cargos = await xano_client.get_cargos(
+                transport=httpx.MockTransport(respond),
+            )
+
+        request = observed["request"]
+        self.assertEqual(request.method, "GET")
+        self.assertNotIn("Authorization", request.headers)
+        self.assertEqual(request.content, b"")
+        self.assertEqual(
+            str(request.url),
+            "https://x8ki-letl-twmt.n7.xano.io/api:hVU-wK41/"
+            "farmacia-final/cargos",
+        )
+        self.assertEqual(cargos, ["Atendente", "Farmac\u00eautico"])
+
+    async def test_get_cargos_accepts_empty_list_for_ui_empty_state(self):
+        with patch.dict(
+            os.environ,
+            {
+                "XANO_API_BASE_URL":
+                    "https://x8ki-letl-twmt.n7.xano.io/api:hVU-wK41"
+            },
+        ):
+            cargos = await xano_client.get_cargos(
+                transport=httpx.MockTransport(
+                    lambda request: httpx.Response(200, json={"cargos": []})
+                ),
+            )
+
+        self.assertEqual(cargos, [])
+
+    async def test_get_cargos_rejects_invalid_records_and_duplicate_names(self):
+        invalid_responses = [
+            {"cargos": [{"id": "1", "nome": "Atendente"}]},
+            {"cargos": [{"id": 1, "nome": " "}]},
+            {
+                "cargos": [
+                    {"id": 1, "nome": "Atendente"},
+                    {"id": 2, "nome": "Atendente"},
+                ]
+            },
+        ]
+        for body in invalid_responses:
+            with self.subTest(body=body), patch.dict(
+                os.environ,
+                {
+                    "XANO_API_BASE_URL":
+                        "https://x8ki-letl-twmt.n7.xano.io/api:hVU-wK41"
+                },
+            ):
+                with self.assertRaises(xano_client.XanoProtocolError):
+                    await xano_client.get_cargos(
+                        transport=httpx.MockTransport(
+                            lambda request, payload=body: httpx.Response(
+                                200,
+                                json=payload,
+                            )
+                        ),
+                    )
+
+    async def test_get_cargos_surfaces_http_and_network_errors(self):
+        with patch.dict(
+            os.environ,
+            {
+                "XANO_API_BASE_URL":
+                    "https://x8ki-letl-twmt.n7.xano.io/api:hVU-wK41"
+            },
+        ):
+            with self.assertRaises(xano_client.XanoAPIError) as http_error:
+                await xano_client.get_cargos(
+                    transport=httpx.MockTransport(
+                        lambda request: httpx.Response(503, json={"secret": "hidden"})
+                    ),
+                )
+            self.assertEqual(http_error.exception.status_code, 503)
+            self.assertNotIn("hidden", str(http_error.exception))
+
+            with self.assertRaises(xano_client.XanoUnavailableError):
+                await xano_client.get_cargos(
+                    transport=httpx.MockTransport(
+                        lambda request: (_ for _ in ()).throw(
+                            httpx.ConnectError("network failure")
+                        )
+                    ),
+                )
+
     async def test_login_sends_normalized_credentials_and_parses_legacy_employee(self):
         observed = {}
 
@@ -53,7 +161,7 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.token, "private-token")
         self.assertIsNone(result.employee.cargo)
 
-    async def test_registration_sends_token_and_cargo(self):
+    async def test_public_registration_sends_no_authentication_or_active_flag(self):
         observed = {}
 
         def respond(request: httpx.Request) -> httpx.Response:
@@ -65,6 +173,7 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
                     "nome": "João",
                     "email": "joao@example.com",
                     "cargo": "Atendente",
+                    "ativo": True,
                 },
             )
 
@@ -76,7 +185,6 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
             },
         ):
             employee = await xano_client.register_employee(
-                "private-token",
                 nome=" João ",
                 email="JOAO@example.com",
                 senha="new-password",
@@ -86,10 +194,7 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
 
         request = observed["request"]
         self.assertEqual(request.method, "POST")
-        self.assertEqual(
-            request.headers["Authorization"],
-            "Bearer private-token",
-        )
+        self.assertNotIn("Authorization", request.headers)
         self.assertEqual(
             str(request.url),
             "https://x8ki-letl-twmt.n7.xano.io/api:hVU-wK41/"
@@ -104,6 +209,7 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
                 "cargo": "Atendente",
             },
         )
+        self.assertTrue(observed["request"].headers["Accept"].startswith("application/json"))
         self.assertEqual(employee.cargo, "Atendente")
 
     async def test_default_base_url_uses_farmacia_api_group(self):
@@ -177,7 +283,7 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
         secret_body = "password private-token internal stack trace"
 
         def respond(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(401, json={"message": secret_body})
+            return httpx.Response(400, json={"message": secret_body})
 
         with patch.dict(
             os.environ,
@@ -188,7 +294,6 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
         ):
             with self.assertRaises(xano_client.XanoAPIError) as caught:
                 await xano_client.register_employee(
-                    "private-token",
                     nome="Ana",
                     email="ana@example.com",
                     senha="password",
@@ -196,7 +301,7 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
                     transport=httpx.MockTransport(respond),
                 )
 
-        self.assertEqual(caught.exception.status_code, 401)
+        self.assertEqual(caught.exception.status_code, 400)
         self.assertNotIn(secret_body, str(caught.exception))
 
     async def test_timeout_is_reported_without_raw_request_details(self):

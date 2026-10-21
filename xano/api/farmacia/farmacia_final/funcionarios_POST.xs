@@ -1,13 +1,12 @@
 query "farmacia-final/funcionarios" verb=POST {
   api_group = "Farmácia"
-  auth = "farmacia_final_funcionario"
+  auth = ""
 
   input {
     text nome filters=trim
     email email filters=trim|lower
     text senha
     text cargo filters=trim
-    bool ativo?=true
   }
 
   stack {
@@ -16,9 +15,24 @@ query "farmacia-final/funcionarios" verb=POST {
       error = "NOME_INVALIDO: informe o nome do funcionário."
     }
 
+    precondition (($input.senha|strlen) > 0) {
+      error_type = "inputerror"
+      error = "SENHA_INVALIDA: informe uma senha."
+    }
+
     precondition (($input.cargo|strlen) > 0) {
       error_type = "inputerror"
       error = "CARGO_INVALIDO: informe o cargo do funcionário."
+    }
+
+    db.get farmacia_final_cargo {
+      field_name = "nome"
+      field_value = $input.cargo
+    } as $cargo
+
+    precondition (($cargo != null) && ($cargo.ativo == true)) {
+      error_type = "inputerror"
+      error = "CARGO_INVALIDO: selecione um cargo disponível."
     }
 
     db.get farmacia_final_funcionario {
@@ -37,7 +51,7 @@ query "farmacia-final/funcionarios" verb=POST {
         email: $input.email
         senha_hash: $input.senha
         cargo: $input.cargo
-        ativo: $input.ativo
+        ativo: true
       }
     } as $funcionario
   }

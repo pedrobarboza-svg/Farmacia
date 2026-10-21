@@ -11,14 +11,18 @@ class XanoEmployeeContractTests(unittest.TestCase):
 
         self.assertIn("text cargo? filters=trim", table_script)
 
-    def test_provisioning_requires_authentication_and_cargo(self):
+    def test_public_signup_requires_cargo_but_not_auth_or_client_active_flag(self):
         api_script = (
             ROOT / "xano/api/farmacia/farmacia_final/funcionarios_POST.xs"
         ).read_text()
 
-        self.assertIn('auth = "farmacia_final_funcionario"', api_script)
+        self.assertNotIn('auth = "farmacia_final_funcionario"', api_script)
+        self.assertIn('auth = ""', api_script)
         self.assertIn("text cargo filters=trim", api_script)
         self.assertIn("precondition (($input.cargo|strlen) > 0)", api_script)
+        self.assertIn("precondition (($input.senha|strlen) > 0)", api_script)
+        self.assertNotIn("bool ativo", api_script)
+        self.assertIn("ativo: true", api_script)
         self.assertIn("field_name = \"email\"", api_script)
         self.assertIn("$existente == null", api_script)
         self.assertIn("cargo: $input.cargo", api_script)
@@ -30,8 +34,19 @@ class XanoEmployeeContractTests(unittest.TestCase):
         response = api_script.split("response = {", maxsplit=1)[1]
 
         self.assertIn("cargo: $funcionario.cargo", response)
+        self.assertIn("ativo: $funcionario.ativo", response)
         self.assertNotIn("senha:", response)
         self.assertNotIn("senha_hash:", response)
+        self.assertNotIn("authToken:", response)
+
+    def test_duplicate_registration_is_prevented_by_validation_and_unique_index(self):
+        api_script = (
+            ROOT / "xano/api/farmacia/farmacia_final/funcionarios_POST.xs"
+        ).read_text()
+        table_script = (ROOT / "xano/table/farmacia_final_funcionario.xs").read_text()
+
+        self.assertIn("EMAIL_DUPLICADO", api_script)
+        self.assertIn('type: "btree|unique"', table_script)
 
     def test_login_does_not_depend_on_optional_cargo(self):
         login_script = (

@@ -89,7 +89,7 @@ async def _request(
     method: str,
     path: str,
     *,
-    payload: dict[str, Any],
+    payload: dict[str, Any] | None = None,
     token: str | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> dict[str, Any]:
@@ -102,11 +102,13 @@ async def _request(
             timeout=httpx.Timeout(10.0, connect=3.0),
             transport=transport,
         ) as client:
+            request_options: dict[str, Any] = {"headers": headers}
+            if payload is not None:
+                request_options["json"] = payload
             response = await client.request(
                 method,
                 f"{_api_base_url()}/{path.lstrip('/')}",
-                json=payload,
-                headers=headers,
+                **request_options,
             )
     except httpx.TimeoutException as exc:
         raise XanoUnavailableError("Xano request timed out.") from exc
@@ -145,8 +147,37 @@ async def login(
     return LoginResult(token=token, employee=employee)
 
 
+async def get_cargos(
+    *,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> list[str]:
+    response = await _request(
+        "GET",
+        "/farmacia-final/cargos",
+        transport=transport,
+    )
+    records = response.get("cargos")
+    if not isinstance(records, list):
+        raise XanoProtocolError("Xano returned an invalid cargo list.")
+
+    cargos: list[str] = []
+    seen: set[str] = set()
+    for record in records:
+        if not isinstance(record, dict):
+            raise XanoProtocolError("Xano returned an invalid cargo list.")
+        cargo_id = record.get("id")
+        nome = record.get("nome")
+        if type(cargo_id) is not int or not isinstance(nome, str) or not nome.strip():
+            raise XanoProtocolError("Xano returned an invalid cargo list.")
+        normalized_nome = nome.strip()
+        if normalized_nome in seen:
+            raise XanoProtocolError("Xano returned duplicate cargos.")
+        seen.add(normalized_nome)
+        cargos.append(normalized_nome)
+    return cargos
+
+
 async def register_employee(
-    token: str,
     *,
     nome: str,
     email: str,
@@ -163,7 +194,6 @@ async def register_employee(
             "senha": senha,
             "cargo": cargo.strip(),
         },
-        token=token,
         transport=transport,
     )
     return _employee_from(response, require_cargo=True)

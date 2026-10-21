@@ -62,4 +62,5 @@ As farmácias físicas de pequeno e médio porte enfrentam desafios no controlo 
 ## 7. Frontend: Reflex   
     - Reflex será utilizado como tecnologia exclusiva para implementação do frontend da aplicação.
     - O frontend chama o Xano pelo servidor Reflex. `XANO_API_BASE_URL` aceita a URL da instância ou do grupo Farmácia; o cliente usa o grupo `/api:hVU-wK41` do workspace `149200` por padrão e acrescenta as rotas `/farmacia-final/*`. O JWT permanece em estado privado da sessão Reflex e não é armazenado no navegador.
+    - O autocadastro público de funcionários cria contas ativas imediatamente (`ativo=true` definido no backend), sem verificação de e-mail ou aprovação. Esse risco de criação aberta de contas ativas deve ser considerado antes da disponibilização pública.
  

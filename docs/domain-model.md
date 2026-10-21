@@ -5,7 +5,7 @@
 
 ## 0. Mapeamento físico no Xano
 
-As entidades e campos abaixo são os nomes lógicos do domínio. No workspace Xano compartilhado, os objetos desta aplicação são isolados com o prefixo `farmacia_final_`: `funcionario` → `farmacia_final_funcionario`, `cliente` → `farmacia_final_cliente`, `categorias` → `farmacia_final_categorias`, `produtos` → `farmacia_final_produtos`, `pedido` → `farmacia_final_pedido` e `item_pedido` → `farmacia_final_item_pedido`. As APIs novas usam o prefixo de rota `/farmacia-final/`. Não alterar nem migrar tabelas legadas de outras aplicações.
+As entidades e campos abaixo são os nomes lógicos do domínio. No workspace Xano compartilhado, os objetos desta aplicação são isolados com o prefixo `farmacia_final_`: `funcionario` → `farmacia_final_funcionario`, `cargo` → `farmacia_final_cargo`, `cliente` → `farmacia_final_cliente`, `categorias` → `farmacia_final_categorias`, `produtos` → `farmacia_final_produtos`, `pedido` → `farmacia_final_pedido` e `item_pedido` → `farmacia_final_item_pedido`. As APIs novas usam o prefixo de rota `/farmacia-final/`. Não alterar nem migrar tabelas legadas de outras aplicações.
 
 ## 1. Dicionário de Dados (Estrutura de Entidades)
 
@@ -20,9 +20,21 @@ As entidades e campos abaixo são os nomes lógicos do domínio. No workspace Xa
 | `ativo` | Boolean | Default `true` | Permite bloquear autenticação de funcionários inativos |
 | `created_at` | Timestamp | Default NOW | Data e hora de criação |
 
-`cargo` é opcional para manter compatibilidade com funcionários existentes; novos cadastros pela API exigem esse campo. O valor é descritivo e não determina permissões.
+`cargo` é opcional para manter compatibilidade com funcionários existentes; novos cadastros pela API exigem esse campo. O valor é descritivo e não determina permissões. O endpoint público de autocadastro define `ativo=true` no backend e não aceita que o visitante controle esse estado. Como não há aprovação ou verificação de e-mail neste fluxo, qualquer pessoa pode criar uma conta ativa; esta exposição é um risco operacional conhecido.
 
-### 1.2. Tabela: `cliente`
+### 1.2. Tabela: `cargo`
+| Campo | Tipo de Dado | Restrições / Chaves | Descrição |
+| :--- | :--- | :--- | :--- |
+| `id` | Integer | PK, Auto Increment | Identificador único do cargo |
+| `nome` | String | Unique, Not Null | Nome apresentado como opção de cadastro |
+| `ativo` | Boolean | Default `true` | Indica se o cargo pode ser escolhido em novos cadastros |
+| `created_at` | Timestamp | Default NOW | Data e hora de criação |
+
+Valores iniciais: `Atendente`, `Farmacêutico`, `Gerente`, `Repositor`, `Caixa` e `Estagiário`. O nome do cargo é copiado para `funcionario.cargo`, que permanece texto para compatibilidade. Cargo é descritivo e não concede permissões.
+
+API pública associada: `GET /farmacia-final/cargos` retorna `{ "cargos": [{ "id": 1, "nome": "Atendente" }] }`, ordenados pelo nome e limitados a registros com `ativo=true`. O cadastro público deve aceitar somente um nome correspondente a um cargo ativo.
+
+### 1.3. Tabela: `cliente`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
 | `id` | Integer | PK, Auto Increment | Identificador único do cliente |
@@ -30,7 +42,7 @@ As entidades e campos abaixo são os nomes lógicos do domínio. No workspace Xa
 | `cpf` | String | Unique, Not Null | Documento de identificação (11 dígitos numéricos) |
 | `created_at` | Timestamp | Default NOW | Data de registo do cliente |
 
-### 1.3. Tabela: `categorias`
+### 1.4. Tabela: `categorias`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
 | `id` | Integer | PK, Auto Increment | Identificador da categoria |
@@ -38,7 +50,7 @@ As entidades e campos abaixo são os nomes lógicos do domínio. No workspace Xa
 | `descricao` | String | Nullable | Descrição opcional da categoria |
 | `ativo` | Boolean | Default `true` | Indica se a categoria está disponível para uso |
 
-### 1.4. Tabela: `produtos`
+### 1.5. Tabela: `produtos`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
 | `id` | Integer | PK, Auto Increment | Identificador único do produto |
@@ -49,7 +61,7 @@ As entidades e campos abaixo são os nomes lógicos do domínio. No workspace Xa
 | `estoque` | Integer | Not Null, $\ge 0$ | Quantidade física disponível |
 | `ativo` | Boolean | Opcional, Default `true` | Indica se o produto é listado para venda no PDV |
 
-### 1.5. Tabela: `pedido`
+### 1.6. Tabela: `pedido`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
 | `id` | Integer | PK, Auto Increment | Número/Código do pedido |
@@ -61,7 +73,7 @@ As entidades e campos abaixo são os nomes lógicos do domínio. No workspace Xa
 | `status` | Enum | Not Null | `rascunho`, `concluido`, `cancelado` |
 | `created_at` | Timestamp | Default NOW | Data/hora exata do encerramento da venda |
 
-### 1.6. Tabela: `item_pedido`
+### 1.7. Tabela: `item_pedido`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |
 | :--- | :--- | :--- | :--- |
 | `id` | Integer | PK, Auto Increment | Identificador único do item |

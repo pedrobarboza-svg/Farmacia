@@ -20,7 +20,10 @@ def login_error_message(status_code: int) -> str:
 
 def registration_error_message(status_code: int) -> str:
     if status_code == 400:
-        return "Não foi possível cadastrar. Confira os dados e se o e-mail já está em uso."
+        return (
+            "Não foi possível cadastrar. Confira os dados, selecione um cargo "
+            "disponível e verifique se o e-mail já está em uso."
+        )
     return "Não foi possível cadastrar o funcionário. Tente novamente."
 
 
@@ -29,6 +32,9 @@ class AuthState(rx.State):
     registration_nome: str = ""
     registration_email: str = ""
     registration_cargo: str = ""
+    registration_cargos: list[str] = []
+    is_loading_cargos: bool = False
+    cargo_load_message: str = ""
     message: str = ""
     message_is_error: bool = False
     is_submitting: bool = False
@@ -42,6 +48,18 @@ class AuthState(rx.State):
     @rx.var
     def is_authenticated(self) -> bool:
         return bool(self._auth_token) and time.time() < self._token_expires_at
+
+    @rx.var
+    def registration_cargo_select_disabled(self) -> bool:
+        return self.is_loading_cargos or not self.registration_cargos
+
+    @rx.var
+    def registration_submit_disabled(self) -> bool:
+        return (
+            self.is_submitting
+            or self.is_loading_cargos
+            or not self.registration_cargos
+        )
 
     def _session_is_valid(self) -> bool:
         return bool(self._auth_token) and time.time() < self._token_expires_at
@@ -71,7 +89,40 @@ class AuthState(rx.State):
 
     @rx.event
     def set_registration_cargo(self, value: str) -> None:
-        self.registration_cargo = value
+        self.registration_cargo = value if value in self.registration_cargos else ""
+
+    @rx.event
+    async def load_cargos(self):
+        self.registration_cargos = []
+        self.registration_cargo = ""
+        self.is_loading_cargos = True
+        self.cargo_load_message = ""
+        try:
+            cargos = await xano_client.get_cargos()
+        except xano_client.XanoAPIError as error:
+            logger.warning("Xano cargo list returned HTTP %s.", error.status_code)
+            self.cargo_load_message = (
+                "Unable to load roles. Please try again later."
+                if self.language == "en"
+                else "Não foi possível carregar os cargos. Tente novamente mais tarde."
+            )
+        except xano_client.XanoClientError as error:
+            logger.warning("Xano cargo list failed: %s.", type(error).__name__)
+            self.cargo_load_message = (
+                "Unable to load roles. Please try again later."
+                if self.language == "en"
+                else "Não foi possível carregar os cargos. Tente novamente mais tarde."
+            )
+        else:
+            self.registration_cargos = cargos
+            if not cargos:
+                self.cargo_load_message = (
+                    "No roles are available at this time."
+                    if self.language == "en"
+                    else "Nenhum cargo está disponível no momento."
+                )
+        finally:
+            self.is_loading_cargos = False
 
     @rx.event
     def require_auth(self):
@@ -147,11 +198,8 @@ class AuthState(rx.State):
 
     @rx.event
     async def register_employee(self, form_data: dict[str, Any]):
-        if not self._session_is_valid():
-            self._clear_session()
-            self.message = "Sua sessão expirou. Entre novamente."
-            self.message_is_error = True
-            return rx.redirect("/login")
+        if self.is_submitting:
+            return
 
         nome_value = form_data.get("nome", "")
         email_value = form_data.get("email", "")
@@ -165,12 +213,15 @@ class AuthState(rx.State):
             self.message = "Preencha todos os campos."
             self.message_is_error = True
             return
+        if cargo not in self.registration_cargos:
+            self.message = "Selecione um cargo disponível."
+            self.message_is_error = True
+            return
 
         self.is_submitting = True
         self.message = ""
         try:
             employee = await xano_client.register_employee(
-                self._auth_token,
                 nome=nome,
                 email=email,
                 senha=senha,
