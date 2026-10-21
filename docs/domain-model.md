@@ -16,8 +16,11 @@ As entidades e campos abaixo são os nomes lógicos do domínio. No workspace Xa
 | `nome` | String | Not Null | Nome completo do funcionário |
 | `email` | String | Unique, Not Null | E-mail corporativo utilizado para login |
 | `senha_hash` | String | Not Null | Hash da palavra-passe de acesso |
+| `cargo` | String | Nullable | Cargo descritivo do funcionário; não concede permissões |
 | `ativo` | Boolean | Default `true` | Permite bloquear autenticação de funcionários inativos |
 | `created_at` | Timestamp | Default NOW | Data e hora de criação |
+
+`cargo` é opcional para manter compatibilidade com funcionários existentes; novos cadastros pela API exigem esse campo. O valor é descritivo e não determina permissões.
 
 ### 1.2. Tabela: `cliente`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |

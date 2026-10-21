@@ -6,6 +6,7 @@ table farmacia_final_funcionario {
     text nome filters=trim
     email email filters=trim|lower { sensitive = true }
     password senha_hash { sensitive = true }
+    text cargo? filters=trim
     bool ativo?=true
     timestamp created_at?=now
   }
