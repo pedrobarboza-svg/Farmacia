@@ -3,6 +3,10 @@
 
 ---
 
+## 0. Mapeamento físico no Xano
+
+As entidades e campos abaixo são os nomes lógicos do domínio. No workspace Xano compartilhado, os objetos desta aplicação são isolados com o prefixo `farmacia_final_`: `funcionario` → `farmacia_final_funcionario`, `cliente` → `farmacia_final_cliente`, `categorias` → `farmacia_final_categorias`, `produtos` → `farmacia_final_produtos`, `pedido` → `farmacia_final_pedido` e `item_pedido` → `farmacia_final_item_pedido`. As APIs novas usam o prefixo de rota `/farmacia-final/`. Não alterar nem migrar tabelas legadas de outras aplicações.
+
 ## 1. Dicionário de Dados (Estrutura de Entidades)
 
 ### 1.1. Tabela: `funcionario`
@@ -12,6 +16,7 @@
 | `nome` | String | Not Null | Nome completo do funcionário |
 | `email` | String | Unique, Not Null | E-mail corporativo utilizado para login |
 | `senha_hash` | String | Not Null | Hash da palavra-passe de acesso |
+| `ativo` | Boolean | Default `true` | Permite bloquear autenticação de funcionários inativos |
 | `created_at` | Timestamp | Default NOW | Data e hora de criação |
 
 ### 1.2. Tabela: `cliente`
@@ -28,6 +33,7 @@
 | `id` | Integer | PK, Auto Increment | Identificador da categoria |
 | `nome` | String | Unique, Not Null | Nome da categoria. Categorias predefinidas: *Remédios*, *Bebidas*, *Fraldas*, *Produtos de Higiene* |
 | `descricao` | String | Nullable | Descrição opcional da categoria |
+| `ativo` | Boolean | Default `true` | Indica se a categoria está disponível para uso |
 
 ### 1.4. Tabela: `produtos`
 | Campo | Tipo de Dado | Restrições / Chaves | Descrição |

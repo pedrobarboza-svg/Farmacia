@@ -16,7 +16,7 @@ context: |
 rules:
   proposal:
     - Manter a proposta concisa e focada nos requisitos da farmácia.
-    - Explicitar o que está fora do escopo (ex.: gateway de pagamento real).
+    - "Explicitar o que está fora do escopo (ex.: gateway de pagamento real)."
   specs:
     - Escrever requisitos verificáveis para validação de CPF e cálculo de 15% de desconto acima de R$ 100,00.
     - Utilizar cenários para comportamentos de baixa de estoque e exceções.
