@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from typing import Any
 
@@ -8,6 +9,7 @@ from farmaciaFinal import xano_client
 
 logger = logging.getLogger(__name__)
 TOKEN_TTL_SECONDS = 24 * 60 * 60
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def login_error_message(status_code: int) -> str:
@@ -42,12 +44,16 @@ class AuthState(rx.State):
     employee_email: str = ""
     employee_cargo: str = ""
     language: str = "pt"
-    _auth_token: str = ""
+    _auth_token: str = rx.Cookie(
+        name="authToken",
+        max_age=TOKEN_TTL_SECONDS,
+        same_site="lax",
+    )
     _token_expires_at: float = 0.0
 
     @rx.var
     def is_authenticated(self) -> bool:
-        return bool(self._auth_token) and time.time() < self._token_expires_at
+        return self._session_is_valid()
 
     @rx.var
     def registration_cargo_select_disabled(self) -> bool:
@@ -62,7 +68,9 @@ class AuthState(rx.State):
         )
 
     def _session_is_valid(self) -> bool:
-        return bool(self._auth_token) and time.time() < self._token_expires_at
+        return bool(self._auth_token) and (
+            self._token_expires_at == 0 or time.time() < self._token_expires_at
+        )
 
     def _clear_session(self) -> None:
         self._auth_token = ""
@@ -138,7 +146,7 @@ class AuthState(rx.State):
     @rx.event
     def redirect_authenticated(self):
         if self._session_is_valid():
-            return rx.redirect("/")
+            return rx.redirect("/dashboard")
         if self._auth_token:
             self._clear_session()
             self.message = "Sua sessão expirou. Entre novamente."
@@ -157,6 +165,14 @@ class AuthState(rx.State):
                 "Enter your email and password."
                 if self.language == "en"
                 else "Informe e-mail e senha."
+            )
+            self.message_is_error = True
+            return
+        if not EMAIL_PATTERN.fullmatch(email):
+            self.message = (
+                "Enter a valid email address."
+                if self.language == "en"
+                else "Informe um e-mail válido."
             )
             self.message_is_error = True
             return
@@ -192,7 +208,7 @@ class AuthState(rx.State):
             self.employee_cargo = result.employee.cargo or ""
             self.message = ""
             self.message_is_error = False
-            return rx.redirect("/")
+            return rx.redirect("/dashboard")
         finally:
             self.is_submitting = False
 

@@ -31,9 +31,15 @@ class AuthStateTests(unittest.TestCase):
             "Não foi possível entrar. Tente novamente.",
         )
 
-    def test_authentication_token_is_a_private_backend_only_var(self):
+    def test_authentication_token_uses_an_auth_cookie(self):
         self.assertIn("_auth_token", AuthState.__fields__)
-        self.assertNotIn("auth_token", AuthState.__fields__)
+        cookie = AuthState.__fields__["_auth_token"].default
+        self.assertEqual(cookie.name, "authToken")
+        self.assertEqual(cookie.max_age, 24 * 60 * 60)
+
+    def test_login_redirects_to_dashboard(self):
+        handler_source = inspect.getsource(AuthState.login.fn)
+        self.assertIn('return rx.redirect("/dashboard")', handler_source)
 
     def test_public_registration_does_not_require_a_session_token(self):
         self.assertNotIn("token", inspect.signature(xano_client.register_employee).parameters)
