@@ -18,6 +18,7 @@ class RegistrationCargoTests(unittest.TestCase):
             'app.add_page(register_page, route="/cadastro", on_load=AuthState.load_cargos)',
             page_source,
         )
+        self.assertIn("rx.hstack(\n                            rx.center(", page_source)
         self.assertIn("rx.select(\n                                AuthState.registration_cargos,", page_source)
         self.assertIn('name="cargo"', page_source)
         self.assertIn("required=True", page_source)
@@ -29,6 +30,14 @@ class RegistrationCargoTests(unittest.TestCase):
             "disabled=AuthState.registration_submit_disabled",
             page_source,
         )
+        self.assertIn('height="52px"', page_source)
+        self.assertIn('width="44px"', page_source)
+        self.assertIn('padding_left="12px"', page_source)
+        self.assertIn('padding_right="14px"', page_source)
+        self.assertIn('border="none"', page_source)
+        self.assertIn('text_align="left"', page_source)
+        self.assertIn('align_items="center"', page_source)
+        self.assertIn('_placeholder={"color": "#8294AC"}', page_source)
         self.assertNotIn('rx.input(\n                                name="cargo"', page_source)
 
     def test_cargo_loader_handles_empty_and_failed_responses_without_fallback(self):
