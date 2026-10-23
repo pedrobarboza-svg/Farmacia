@@ -41,6 +41,11 @@ class AuthStateTests(unittest.TestCase):
         handler_source = inspect.getsource(AuthState.login.fn)
         self.assertIn('return rx.redirect("/dashboard")', handler_source)
 
+    def test_login_brand_uses_official_logo(self):
+        page_source = inspect.getsource(__import__("farmaciaFinal.farmaciaFinal", fromlist=["_brand_header"])._brand_header)
+        self.assertIn('src="/logofarmacia.png"', page_source)
+        self.assertIn('alt="DROGA-NONIMO"', page_source)
+
     def test_public_registration_does_not_require_a_session_token(self):
         self.assertNotIn("token", inspect.signature(xano_client.register_employee).parameters)
         handler_source = inspect.getsource(AuthState.register_employee.fn)

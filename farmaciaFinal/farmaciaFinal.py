@@ -1,6 +1,7 @@
 import reflex as rx
 
 from farmaciaFinal.auth_state import AuthState
+from farmaciaFinal.dashboard_state import DashboardState
 
 
 def _feedback() -> rx.Component:
@@ -32,25 +33,13 @@ def _language_selector() -> rx.Component:
 
 def _brand_header() -> rx.Component:
     return rx.vstack(
-        rx.center(
-            rx.text(
-                "+%",
-                color="white",
-                font_size="24px",
-                font_weight="800",
-                line_height="1",
-            ),
-            width="64px",
-            height="64px",
-            background="#2563EB",
-            border_radius="18px",
-            box_shadow="0 12px 32px rgba(37, 99, 235, 0.35)",
-        ),
-        rx.heading(
-            "DROGA-NONIMO",
-            size="8",
-            color="#F8FAFC",
-            text_align="center",
+        rx.image(
+            src="/logofarmacia.png",
+            alt="DROGA-NONIMO",
+            width="190px",
+            height="auto",
+            max_height="82px",
+            object_fit="contain",
         ),
         rx.text(
             "Mais saúde para o seu dia a dia",
@@ -58,33 +47,333 @@ def _brand_header() -> rx.Component:
             size="4",
             text_align="center",
         ),
-        spacing="3",
+        spacing="4",
         align="center",
         width="100%",
+    )
+
+
+def _sidebar_link(label: str, icon: str, href: str, active: bool = False) -> rx.Component:
+    return rx.link(
+        rx.hstack(
+            rx.icon(tag=icon, size=18),
+            rx.text(label, font_size="14px", font_weight="600"),
+            spacing="3",
+            align="center",
+        ),
+        href=href,
+        width="100%",
+        padding="12px 14px",
+        border_radius="9999px",
+        color="#D7E1E8" if not active else "#123B2A",
+        background="#FFFFFF" if not active else "#8BD5A7",
+        _hover={"background": "#D8F3E3", "color": "#123B2A"},
+    )
+
+
+def _dashboard_sidebar() -> rx.Component:
+    return rx.vstack(
+        rx.vstack(
+            rx.image(
+                src="/logofarmacia.png",
+                alt="DROGA-NONIMO",
+                width="156px",
+                height="auto",
+                max_height="68px",
+                object_fit="contain",
+            ),
+            spacing="2",
+            align="center",
+            width="100%",
+            padding_bottom="24px",
+        ),
+        rx.vstack(
+            _sidebar_link("Visão Geral", "layout_dashboard", "/dashboard", active=True),
+            _sidebar_link("Gestão de Estoque", "package", "/estoque"),
+            _sidebar_link("Vendas", "shopping_cart", "/vendas"),
+            _sidebar_link("Categorias", "tags", "/categorias"),
+            _sidebar_link("Funcionários", "users", "/funcionarios"),
+            _sidebar_link("Configurações", "settings", "/configuracoes"),
+            spacing="2",
+            width="100%",
+        ),
+        rx.spacer(),
+        rx.button(
+            rx.hstack(
+                rx.icon(tag="log_out", size=18),
+                rx.text("Sair", font_size="14px", font_weight="600"),
+                spacing="3",
+            ),
+            on_click=AuthState.logout,
+            variant="ghost",
+            color="#D7E1E8",
+            width="100%",
+            justify_content="flex-start",
+            padding="12px 14px",
+            border_radius="9999px",
+            _hover={"background": "#183B4A", "color": "#FFFFFF"},
+        ),
+        width="248px",
+        min_width="248px",
+        height="100vh",
+        padding="32px 20px 24px",
+        background="#0B2633",
+        spacing="5",
+        align="stretch",
+        position="sticky",
+        top="0",
+    )
+
+
+def _metric_card(title: str, value: rx.Var, context: rx.Var, icon: str, color: str) -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.center(
+                rx.icon(tag=icon, size=20, color=color),
+                width="42px",
+                height="42px",
+                background=f"{color}1A",
+                border_radius="16px",
+            ),
+            rx.text(title, color="#64748B", font_size="14px", font_weight="600"),
+            spacing="3",
+            align="center",
+        ),
+        rx.heading(value, size="7", color="#102A43", margin_top="20px"),
+        rx.text(context, color="#7B8794", font_size="13px", margin_top="4px"),
+        background="#FFFFFF",
+        border="1px solid #E8EEF2",
+        border_radius="32px",
+        padding="22px",
+        box_shadow="0 8px 24px rgba(16, 42, 67, 0.06)",
+        min_height="160px",
+    )
+
+
+def _category_bars() -> rx.Component:
+    categories = [
+        ("Medicamentos", "68%", "R$ 1.240,00", "#55B77A"),
+        ("Antibióticos", "48%", "R$ 876,40", "#4D9DE0"),
+        ("Proteínas e Suplementos", "34%", "R$ 620,80", "#F2B84B"),
+        ("Primeiros Socorros", "22%", "R$ 401,30", "#E97878"),
+    ]
+    return rx.box(
+        rx.heading("Vendas por Categorias", size="5", color="#102A43"),
+        rx.vstack(
+            *[
+                rx.vstack(
+                    rx.hstack(
+                        rx.text(name, color="#52606D", font_size="14px"),
+                        rx.spacer(),
+                        rx.text(value, color="#102A43", font_size="14px", font_weight="700"),
+                        width="100%",
+                    ),
+                    rx.box(
+                        rx.box(
+                            width=percentage,
+                            height="8px",
+                            background=color,
+                            border_radius="99px",
+                        ),
+                        width="100%",
+                        height="8px",
+                        background="#EDF2F4",
+                        border_radius="99px",
+                    ),
+                    spacing="2",
+                    width="100%",
+                )
+                for name, percentage, value, color in categories
+            ],
+            spacing="5",
+            margin_top="26px",
+            width="100%",
+        ),
+        background="#FFFFFF",
+        border="1px solid #E8EEF2",
+        border_radius="24px",
+        padding="26px",
+        box_shadow="0 8px 24px rgba(16, 42, 67, 0.06)",
+    )
+
+
+def _quick_actions() -> rx.Component:
+    actions = [
+        ("Promoções", "Criar ou editar ofertas", "badge_percent", "#E8F7EE"),
+        ("Alterar Horário", "Atualizar funcionamento", "clock_3", "#EAF3FB"),
+        ("Avisos", "Publicar aviso no sistema", "megaphone", "#FFF5DF"),
+        ("Pausar Loja", "Suspender vendas temporariamente", "circle_pause", "#FCEBEC"),
+    ]
+    return rx.box(
+        rx.heading("Modificações Rápidas", size="5", color="#102A43"),
+        rx.vstack(
+            *[
+                rx.hstack(
+                    rx.center(
+                        rx.icon(tag=icon, size=18, color="#356B55"),
+                        width="38px",
+                        height="38px",
+                        background=color,
+                        border_radius="10px",
+                    ),
+                    rx.vstack(
+                        rx.text(name, color="#102A43", font_size="14px", font_weight="700"),
+                        rx.text(description, color="#7B8794", font_size="12px"),
+                        align="start",
+                        spacing="1",
+                    ),
+                    rx.icon(tag="chevron_right", size=17, color="#9AA5B1"),
+                    justify="between",
+                    align="center",
+                    width="100%",
+                    padding="12px",
+                    border_radius="24px",
+                    _hover={"background": "#F5F8FA"},
+                )
+                for name, description, icon, color in actions
+            ],
+            spacing="2",
+            margin_top="18px",
+        ),
+        background="#FFFFFF",
+        border="1px solid #E8EEF2",
+        border_radius="24px",
+        padding="26px",
+        box_shadow="0 8px 24px rgba(16, 42, 67, 0.06)",
+    )
+
+
+def _dashboard_content() -> rx.Component:
+    return rx.vstack(
+        rx.hstack(
+            rx.vstack(
+                rx.heading("Visão Geral", size="8", color="#102A43"),
+                rx.text(
+                    "Acompanhe o desempenho da sua farmácia.",
+                    color="#7B8794",
+                    font_size="14px",
+                ),
+                spacing="1",
+                align="start",
+            ),
+            rx.spacer(),
+            rx.vstack(
+                rx.text(
+                    AuthState.employee_name,
+                    color="#102A43",
+                    font_size="14px",
+                    font_weight="700",
+                ),
+                rx.cond(
+                    AuthState.employee_cargo != "",
+                    rx.text(
+                        AuthState.employee_cargo,
+                        color="#7B8794",
+                        font_size="12px",
+                    ),
+                    rx.fragment(),
+                ),
+                spacing="1",
+                align="end",
+            ),
+            rx.button(
+                rx.hstack(rx.text("+"), rx.text("Nova Venda"), spacing="2"),
+                background="#55B77A",
+                color="#FFFFFF",
+                border_radius="9999px",
+                padding="12px 18px",
+                font_weight="700",
+                _hover={"background": "#3E9D63"},
+            ),
+            width="100%",
+            align="center",
+        ),
+        rx.grid(
+            _metric_card(
+                "Vendas Hoje",
+                DashboardState.vendas_hoje,
+                DashboardState.vendas_hoje_contexto,
+                "trending_up",
+                "#55B77A",
+            ),
+            _metric_card(
+                "Esta Semana",
+                DashboardState.vendas_semana,
+                DashboardState.vendas_semana_contexto,
+                "calendar_days",
+                "#4D9DE0",
+            ),
+            _metric_card(
+                "Este Mês",
+                DashboardState.vendas_mes,
+                DashboardState.vendas_mes_contexto,
+                "chart_no_axes_combined",
+                "#F2B84B",
+            ),
+            _metric_card(
+                "Itens Estoque",
+                DashboardState.itens_estoque,
+                DashboardState.itens_estoque_contexto,
+                "package_check",
+                "#E97878",
+            ),
+            columns={"initial": "1", "md": "2", "xl": "4"},
+            spacing="5",
+            width="100%",
+        ),
+        rx.grid(
+            _category_bars(),
+            _quick_actions(),
+            columns={"initial": "1", "lg": "1.2fr 0.8fr"},
+            spacing="5",
+            width="100%",
+        ),
+        spacing="7",
+        width="100%",
+        max_width="1440px",
+        padding="42px 48px",
+        align="stretch",
     )
 
 
 def index() -> rx.Component:
     return rx.cond(
         AuthState.is_authenticated,
-        rx.container(
-            rx.vstack(
-                rx.heading("FarmáciaFinal", size="8"),
-                rx.text("Bem-vindo, ", AuthState.employee_name),
-                rx.cond(
-                    AuthState.employee_cargo != "",
-                    rx.text("Cargo: ", AuthState.employee_cargo),
-                    rx.fragment(),
-                ),
-                rx.hstack(
-                    rx.link(rx.button("Cadastrar funcionário"), href="/cadastro"),
-                    rx.button("Sair", on_click=AuthState.logout),
-                ),
-                spacing="5",
-                align="center",
-                justify="center",
-                min_height="85vh",
+        rx.hstack(
+            _dashboard_sidebar(),
+            rx.box(
+                _dashboard_content(),
+                flex="1",
+                min_height="100vh",
+                background="#EEF2F6",
+                border_radius="32px 0 0 32px",
             ),
+            align="start",
+            spacing="0",
+            width="100%",
+            min_height="100vh",
+        ),
+        rx.center(rx.spinner(), min_height="85vh"),
+    )
+
+
+def module_placeholder(title: str) -> rx.Component:
+    return rx.cond(
+        AuthState.is_authenticated,
+        rx.center(
+            rx.vstack(
+                rx.heading(title, size="8", color="#102A43"),
+                rx.text(
+                    "Este módulo estará disponível em breve.",
+                    color="#7B8794",
+                ),
+                rx.link(rx.button("Voltar para Visão Geral"), href="/dashboard"),
+                spacing="4",
+                align="center",
+            ),
+            min_height="100vh",
+            background="#EEF2F6",
+            width="100%",
         ),
         rx.center(rx.spinner(), min_height="85vh"),
     )
@@ -207,6 +496,7 @@ def login_page() -> rx.Component:
                                 disabled=AuthState.is_submitting,
                                 width="100%",
                                 height="52px",
+                                border_radius="24px",
                                 background="#DBEAFE",
                                 color="#102A4C",
                                 font_weight="700",
@@ -238,7 +528,7 @@ def login_page() -> rx.Component:
                     padding="32px",
                     background="#101F33",
                     border="1px solid #263A53",
-                    border_radius="20px",
+                    border_radius="24px",
                     box_shadow="0 24px 70px rgba(0, 0, 0, 0.3)",
                 ),
                 spacing="8",
@@ -472,6 +762,7 @@ def register_page() -> rx.Component:
                             disabled=AuthState.registration_submit_disabled,
                             width="100%",
                             height="52px",
+                            border_radius="24px",
                             background="#DBEAFE",
                             color="#102A4C",
                             font_weight="700",
@@ -503,7 +794,7 @@ def register_page() -> rx.Component:
                 padding="32px",
                 background="#101F33",
                 border="1px solid #263A53",
-                border_radius="20px",
+                border_radius="24px",
                 box_shadow="0 24px 70px rgba(0, 0, 0, 0.3)",
             ),
             spacing="8",
@@ -526,3 +817,28 @@ app.add_page(index, on_load=AuthState.require_auth)
 app.add_page(login_page, route="/login", on_load=AuthState.redirect_authenticated)
 app.add_page(register_page, route="/cadastro", on_load=AuthState.load_cargos)
 app.add_page(index, route="/dashboard", on_load=AuthState.require_auth)
+app.add_page(
+    lambda: module_placeholder("Gestão de Estoque"),
+    route="/estoque",
+    on_load=AuthState.require_auth,
+)
+app.add_page(
+    lambda: module_placeholder("Vendas"),
+    route="/vendas",
+    on_load=AuthState.require_auth,
+)
+app.add_page(
+    lambda: module_placeholder("Categorias"),
+    route="/categorias",
+    on_load=AuthState.require_auth,
+)
+app.add_page(
+    lambda: module_placeholder("Funcionários"),
+    route="/funcionarios",
+    on_load=AuthState.require_auth,
+)
+app.add_page(
+    lambda: module_placeholder("Configurações"),
+    route="/configuracoes",
+    on_load=AuthState.require_auth,
+)
