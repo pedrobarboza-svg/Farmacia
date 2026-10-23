@@ -2,6 +2,7 @@ import reflex as rx
 
 from farmaciaFinal.auth_state import AuthState
 from farmaciaFinal.dashboard_state import DashboardState
+from farmaciaFinal.stock_state import StockState
 
 
 def _feedback() -> rx.Component:
@@ -71,7 +72,7 @@ def _sidebar_link(label: str, icon: str, href: str, active: bool = False) -> rx.
     )
 
 
-def _dashboard_sidebar() -> rx.Component:
+def _dashboard_sidebar(active_route: str = "/dashboard") -> rx.Component:
     return rx.vstack(
         rx.vstack(
             rx.image(
@@ -88,12 +89,12 @@ def _dashboard_sidebar() -> rx.Component:
             padding_bottom="24px",
         ),
         rx.vstack(
-            _sidebar_link("Visão Geral", "layout_dashboard", "/dashboard", active=True),
-            _sidebar_link("Gestão de Estoque", "package", "/estoque"),
-            _sidebar_link("Vendas", "shopping_cart", "/vendas"),
-            _sidebar_link("Categorias", "tags", "/categorias"),
-            _sidebar_link("Funcionários", "users", "/funcionarios"),
-            _sidebar_link("Configurações", "settings", "/configuracoes"),
+            _sidebar_link("Visão Geral", "layout_dashboard", "/dashboard", active=active_route == "/dashboard"),
+            _sidebar_link("Gestão de Estoque", "package", "/estoque", active=active_route == "/estoque"),
+            _sidebar_link("Vendas", "shopping_cart", "/vendas", active=active_route == "/vendas"),
+            _sidebar_link("Categorias", "tags", "/categorias", active=active_route == "/categorias"),
+            _sidebar_link("Funcionários", "users", "/funcionarios", active=active_route == "/funcionarios"),
+            _sidebar_link("Configurações", "settings", "/configuracoes", active=active_route == "/configuracoes"),
             spacing="2",
             width="100%",
         ),
@@ -374,6 +375,197 @@ def module_placeholder(title: str) -> rx.Component:
             min_height="100vh",
             background="#EEF2F6",
             width="100%",
+        ),
+        rx.center(rx.spinner(), min_height="85vh"),
+    )
+
+
+def _stock_summary_card(title: str, value: rx.Var, context: str, icon: str, color: str) -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.center(
+                rx.icon(tag=icon, size=20, color=color),
+                width="42px",
+                height="42px",
+                background=f"{color}1A",
+                border_radius="16px",
+            ),
+            rx.text(title, color="#64748B", font_size="14px", font_weight="600"),
+            spacing="3",
+            align="center",
+        ),
+        rx.heading(value, size="7", color="#102A43", margin_top="20px"),
+        rx.text(context, color="#7B8794", font_size="13px", margin_top="4px"),
+        background="#FFFFFF",
+        border="1px solid #E8EEF2",
+        border_radius="32px",
+        padding="22px",
+        box_shadow="0 8px 24px rgba(16, 42, 67, 0.06)",
+        min_height="160px",
+    )
+
+
+def _stock_row(medicine: rx.Var) -> rx.Component:
+    status = medicine["status"]
+    return rx.grid(
+        rx.text(medicine["nome"], color="#102A43", font_weight="700"),
+        rx.text(medicine["categoria"], color="#64748B"),
+        rx.text(medicine["quantidade"], color="#102A43"),
+        rx.text(medicine["preco"], color="#102A43", font_weight="600"),
+        rx.badge(
+            status,
+            color_scheme=rx.cond(status == "Normal", "green", "orange"),
+            variant="soft",
+            border_radius="9999px",
+        ),
+        rx.hstack(
+            rx.button(rx.icon(tag="pencil", size=16), variant="ghost", color="#356B55"),
+            rx.button(rx.icon(tag="trash_2", size=16), variant="ghost", color="#C24141"),
+            spacing="1",
+        ),
+        columns="1.8fr 1.4fr 0.7fr 0.9fr 1fr 0.7fr",
+        gap="4",
+        align="center",
+        padding="17px 22px",
+        border_top="1px solid #EDF2F4",
+        width="100%",
+    )
+
+
+def stock_page() -> rx.Component:
+    return rx.cond(
+        AuthState.is_authenticated,
+        rx.hstack(
+            _dashboard_sidebar(active_route="/estoque"),
+            rx.box(
+                rx.vstack(
+                    rx.hstack(
+                        rx.vstack(
+                            rx.heading("Gestão de Estoque", size="8", color="#102A43"),
+                            rx.text(
+                                "Acompanhe seus medicamentos e mantenha o estoque em dia.",
+                                color="#7B8794",
+                                font_size="14px",
+                            ),
+                            spacing="1",
+                            align="start",
+                        ),
+                        rx.spacer(),
+                        rx.button(
+                            rx.hstack(rx.text("+"), rx.text("Novo Medicamento"), spacing="2"),
+                            background="#55B77A",
+                            color="#FFFFFF",
+                            border_radius="9999px",
+                            padding="12px 18px",
+                            font_weight="700",
+                            _hover={"background": "#3E9D63"},
+                        ),
+                        width="100%",
+                        align="center",
+                    ),
+                    rx.grid(
+                        _stock_summary_card(
+                            "Total de Itens",
+                            StockState.total_items,
+                            "Quantidade disponível no estoque",
+                            "package_check",
+                            "#55B77A",
+                        ),
+                        _stock_summary_card(
+                            "Produtos em Alerta",
+                            StockState.low_stock_count,
+                            "Produtos com baixo estoque",
+                            "triangle_alert",
+                            "#F2B84B",
+                        ),
+                        _stock_summary_card(
+                            "Valor Total do Estoque",
+                            StockState.total_stock_value,
+                            "Valor calculado pelos itens cadastrados",
+                            "wallet",
+                            "#4D9DE0",
+                        ),
+                        columns={"initial": "1", "md": "3"},
+                        spacing="5",
+                        width="100%",
+                    ),
+                    rx.hstack(
+                        rx.input(
+                            placeholder="Buscar medicamento...",
+                            value=StockState.search_term,
+                            on_change=StockState.set_search_term,
+                            width="100%",
+                            height="48px",
+                            padding_left="16px",
+                            background="#FFFFFF",
+                            border="1px solid #DCE5EA",
+                            border_radius="9999px",
+                        ),
+                        rx.select(
+                            StockState.category_options,
+                            value=StockState.category_filter,
+                            on_change=StockState.set_category_filter,
+                            width="220px",
+                            height="48px",
+                            border="1px solid #DCE5EA",
+                            border_radius="9999px",
+                            background="#FFFFFF",
+                        ),
+                        rx.select(
+                            StockState.status_options,
+                            value=StockState.status_filter,
+                            on_change=StockState.set_status_filter,
+                            width="180px",
+                            height="48px",
+                            border="1px solid #DCE5EA",
+                            border_radius="9999px",
+                            background="#FFFFFF",
+                        ),
+                        width="100%",
+                        spacing="3",
+                    ),
+                    rx.box(
+                        rx.hstack(
+                            *[
+                                rx.text(label, color="#7B8794", font_size="12px", font_weight="700")
+                                for label in (
+                                    "Nome",
+                                    "Categoria",
+                                    "Quantidade",
+                                    "Preço",
+                                    "Status do Estoque",
+                                    "Ações",
+                                )
+                            ],
+                            display="grid",
+                            grid_template_columns="1.8fr 1.4fr 0.7fr 0.9fr 1fr 0.7fr",
+                            gap="4",
+                            padding="16px 22px",
+                            width="100%",
+                        ),
+                        rx.foreach(StockState.filtered_medicines, _stock_row),
+                        background="#FFFFFF",
+                        border="1px solid #E8EEF2",
+                        border_radius="32px",
+                        overflow="hidden",
+                        box_shadow="0 8px 24px rgba(16, 42, 67, 0.06)",
+                        width="100%",
+                    ),
+                    spacing="7",
+                    width="100%",
+                    max_width="1440px",
+                    padding="42px 48px",
+                    align="stretch",
+                ),
+                flex="1",
+                min_height="100vh",
+                background="#EEF2F6",
+                border_radius="32px 0 0 32px",
+            ),
+            align="start",
+            spacing="0",
+            width="100%",
+            min_height="100vh",
         ),
         rx.center(rx.spinner(), min_height="85vh"),
     )
@@ -818,7 +1010,7 @@ app.add_page(login_page, route="/login", on_load=AuthState.redirect_authenticate
 app.add_page(register_page, route="/cadastro", on_load=AuthState.load_cargos)
 app.add_page(index, route="/dashboard", on_load=AuthState.require_auth)
 app.add_page(
-    lambda: module_placeholder("Gestão de Estoque"),
+    stock_page,
     route="/estoque",
     on_load=AuthState.require_auth,
 )

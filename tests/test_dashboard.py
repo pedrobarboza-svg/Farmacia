@@ -57,6 +57,20 @@ class DashboardTests(unittest.TestCase):
         self.assertIn('border_radius="32px"', self.source)
         self.assertIn('border_radius="32px 0 0 32px"', self.source)
 
+    def test_stock_page_contains_inventory_management_controls(self):
+        for text in (
+            "Gestão de Estoque",
+            "Novo Medicamento",
+            "Total de Itens",
+            "Produtos em Alerta",
+            "Valor Total do Estoque",
+            "Buscar medicamento...",
+            "Status do Estoque",
+        ):
+            self.assertIn(text, self.source)
+        self.assertIn("route=\"/estoque\"", self.source)
+        self.assertIn("StockState.filtered_medicines", self.source)
+
 
 if __name__ == "__main__":
     unittest.main()
