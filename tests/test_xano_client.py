@@ -212,6 +212,73 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(observed["request"].headers["Accept"].startswith("application/json"))
         self.assertEqual(employee.cargo, "Atendente")
 
+    async def test_products_use_bearer_auth_and_parse_list_response(self):
+        observed = {}
+
+        def respond(request: httpx.Request) -> httpx.Response:
+            observed["request"] = request
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": 4,
+                        "categoria_id": 2,
+                        "nome": "Paracetamol",
+                        "descricao": "",
+                        "preco": 12.9,
+                        "estoque": 10,
+                        "ativo": True,
+                    }
+                ],
+            )
+
+        products = await xano_client.get_products(
+            token="private-token",
+            transport=httpx.MockTransport(respond),
+        )
+
+        self.assertEqual(products[0].nome, "Paracetamol")
+        self.assertEqual(observed["request"].headers["Authorization"], "Bearer private-token")
+        self.assertEqual(observed["request"].method, "GET")
+
+    async def test_create_product_sends_expected_payload(self):
+        observed = {}
+
+        def respond(request: httpx.Request) -> httpx.Response:
+            observed["request"] = request
+            return httpx.Response(
+                200,
+                json={
+                    "id": 8,
+                    "categoria_id": 3,
+                    "nome": "Vitamina C",
+                    "descricao": "500mg",
+                    "preco": 19.9,
+                    "estoque": 25,
+                    "ativo": True,
+                },
+            )
+
+        product = await xano_client.create_product(
+            token="private-token",
+            nome=" Vitamina C ",
+            descricao=" 500mg ",
+            preco=19.9,
+            estoque=25,
+            categoria_id=3,
+            transport=httpx.MockTransport(respond),
+        )
+
+        self.assertEqual(product.id, 8)
+        self.assertEqual(json.loads(observed["request"].read()), {
+            "nome": "Vitamina C",
+            "descricao": "500mg",
+            "preco": 19.9,
+            "estoque": 25,
+            "categoria_id": 3,
+        })
+        self.assertEqual(observed["request"].method, "POST")
+
     async def test_default_base_url_uses_farmacia_api_group(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(xano_client.XanoProtocolError):

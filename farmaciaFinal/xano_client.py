@@ -45,6 +45,23 @@ class LoginResult:
     employee: Employee
 
 
+@dataclass(frozen=True)
+class Category:
+    id: int
+    nome: str
+
+
+@dataclass(frozen=True)
+class Product:
+    id: int
+    categoria_id: int
+    nome: str
+    descricao: str
+    preco: float
+    estoque: int
+    ativo: bool
+
+
 def _api_base_url() -> str:
     value = os.environ.get("XANO_API_BASE_URL", DEFAULT_XANO_API_BASE_URL).strip().rstrip("/")
 
@@ -92,10 +109,10 @@ async def _request(
     payload: dict[str, Any] | None = None,
     token: str | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
-) -> dict[str, Any]:
+) -> Any:
     headers = {"Accept": "application/json"}
     if token:
-        headers["Authorization"] = f"Bearer {token}"
+        headers.update({"Authorization": "Bearer " + token})
 
     try:
         async with httpx.AsyncClient(
@@ -123,9 +140,132 @@ async def _request(
     except ValueError as exc:
         raise XanoProtocolError("Xano returned an invalid response.") from exc
 
-    if not isinstance(result, dict):
-        raise XanoProtocolError("Xano returned an invalid response.")
     return result
+
+
+def _product_from(payload: Any) -> Product:
+    if not isinstance(payload, dict):
+        raise XanoProtocolError("Xano returned an invalid product.")
+    product_id = payload.get("id")
+    category_id = payload.get("categoria_id")
+    nome = payload.get("nome")
+    descricao = payload.get("descricao", "")
+    preco = payload.get("preco")
+    estoque = payload.get("estoque")
+    ativo = payload.get("ativo", True)
+    if (
+        type(product_id) is not int
+        or type(category_id) is not int
+        or not isinstance(nome, str)
+        or not isinstance(descricao, str)
+        or not isinstance(preco, (int, float))
+        or isinstance(preco, bool)
+        or type(estoque) is not int
+        or not isinstance(ativo, bool)
+    ):
+        raise XanoProtocolError("Xano returned an invalid product.")
+    return Product(
+        id=product_id,
+        categoria_id=category_id,
+        nome=nome,
+        descricao=descricao,
+        preco=float(preco),
+        estoque=estoque,
+        ativo=ativo,
+    )
+
+
+async def get_categories(
+    *,
+    token: str,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> list[Category]:
+    response = await _request(
+        "GET", "/farmacia-final/categorias", token=token, transport=transport
+    )
+    if not isinstance(response, list):
+        raise XanoProtocolError("Xano returned an invalid category list.")
+    categories: list[Category] = []
+    for record in response:
+        if (
+            not isinstance(record, dict)
+            or type(record.get("id")) is not int
+            or not isinstance(record.get("nome"), str)
+            or not record["nome"].strip()
+        ):
+            raise XanoProtocolError("Xano returned an invalid category list.")
+        categories.append(Category(id=record["id"], nome=record["nome"].strip()))
+    return categories
+
+
+async def get_products(
+    *,
+    token: str,
+    category_id: int | None = None,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> list[Product]:
+    path = "/farmacia-final/produtos"
+    if category_id is not None:
+        path += f"?categoria_id={category_id}"
+    response = await _request("GET", path, token=token, transport=transport)
+    if not isinstance(response, list):
+        raise XanoProtocolError("Xano returned an invalid product list.")
+    return [_product_from(record) for record in response]
+
+
+async def create_product(
+    *,
+    token: str,
+    nome: str,
+    descricao: str,
+    preco: float,
+    estoque: int,
+    categoria_id: int,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> Product:
+    response = await _request(
+        "POST",
+        "/farmacia-final/produtos",
+        token=token,
+        payload={
+            "nome": nome.strip(),
+            "descricao": descricao.strip(),
+            "preco": preco,
+            "estoque": estoque,
+            "categoria_id": categoria_id,
+        },
+        transport=transport,
+    )
+    return _product_from(response)
+
+
+async def update_product(
+    *,
+    token: str,
+    product_id: int,
+    nome: str,
+    descricao: str,
+    preco: float,
+    estoque: int,
+    categoria_id: int,
+    ativo: bool = True,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> Product:
+    response = await _request(
+        "PATCH",
+        f"/farmacia-final/produtos/{product_id}",
+        token=token,
+        payload={
+            "nome": nome.strip(),
+            "descricao": descricao.strip(),
+            "preco": preco,
+            "estoque": estoque,
+            "categoria_id": categoria_id,
+            "ativo": ativo,
+        },
+        transport=transport,
+    )
+    return _product_from(response)
 
 
 async def login(

@@ -64,4 +64,5 @@ As farmácias físicas de pequeno e médio porte enfrentam desafios no controlo 
     - Reflex será utilizado como tecnologia exclusiva para implementação do frontend da aplicação.
     - O frontend chama o Xano pelo servidor Reflex. `XANO_API_BASE_URL` aceita a URL da instância ou do grupo Farmácia; o cliente usa o grupo `/api:hVU-wK41` do workspace `149200` por padrão e acrescenta as rotas `/farmacia-final/*`. Após o login, o `authToken` é armazenado em um `rx.Cookie` com validade de 24 horas; a expiração do cookie e a validação do Xano encerram sessões inválidas.
     - O autocadastro público de funcionários cria contas ativas imediatamente (`ativo=true` definido no backend), sem verificação de e-mail ou aprovação. Esse risco de criação aberta de contas ativas deve ser considerado antes da disponibilização pública.
+    - A página protegida de Gestão de Estoque carrega categorias e produtos reais do Xano usando o `authToken`, mantém busca/filtros e recalcula os cards a partir da lista atual. Criar e editar usam `POST`/`PATCH`; excluir é uma desativação lógica (`ativo=false`), pois o contrato atual do Xano não expõe endpoint `DELETE`.
  

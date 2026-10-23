@@ -419,8 +419,18 @@ def _stock_row(medicine: rx.Var) -> rx.Component:
             border_radius="9999px",
         ),
         rx.hstack(
-            rx.button(rx.icon(tag="pencil", size=16), variant="ghost", color="#356B55"),
-            rx.button(rx.icon(tag="trash_2", size=16), variant="ghost", color="#C24141"),
+            rx.button(
+                rx.icon(tag="pencil", size=16),
+                variant="ghost",
+                color="#356B55",
+                on_click=StockState.open_edit(medicine["id"]),
+            ),
+            rx.button(
+                rx.icon(tag="trash_2", size=16),
+                variant="ghost",
+                color="#C24141",
+                on_click=StockState.request_delete(medicine["id"]),
+            ),
             spacing="1",
         ),
         columns="1.8fr 1.4fr 0.7fr 0.9fr 1fr 0.7fr",
@@ -458,6 +468,7 @@ def stock_page() -> rx.Component:
                             border_radius="9999px",
                             padding="12px 18px",
                             font_weight="700",
+                            on_click=StockState.open_create,
                             _hover={"background": "#3E9D63"},
                         ),
                         width="100%",
@@ -551,6 +562,16 @@ def stock_page() -> rx.Component:
                         box_shadow="0 8px 24px rgba(16, 42, 67, 0.06)",
                         width="100%",
                     ),
+                    rx.cond(
+                        StockState.error_message != "",
+                        rx.callout(
+                            StockState.error_message,
+                            icon="triangle_alert",
+                            color_scheme="red",
+                            width="100%",
+                        ),
+                        rx.fragment(),
+                    ),
                     spacing="7",
                     width="100%",
                     max_width="1440px",
@@ -561,6 +582,95 @@ def stock_page() -> rx.Component:
                 min_height="100vh",
                 background="#EEF2F6",
                 border_radius="32px 0 0 32px",
+            ),
+            rx.dialog.root(
+                rx.dialog.content(
+                    rx.dialog.title(
+                        rx.cond(
+                            StockState.selected_id == 0,
+                            "Novo Medicamento",
+                            "Editar Medicamento",
+                        )
+                    ),
+                    rx.vstack(
+                        rx.input(
+                            placeholder="Nome do medicamento",
+                            value=StockState.form_nome,
+                            on_change=StockState.set_form_nome,
+                        ),
+                        rx.input(
+                            placeholder="Descrição",
+                            value=StockState.form_descricao,
+                            on_change=StockState.set_form_descricao,
+                        ),
+                        rx.hstack(
+                            rx.input(
+                                placeholder="Preço (ex.: 12,90)",
+                                value=StockState.form_preco,
+                                on_change=StockState.set_form_preco,
+                            ),
+                            rx.input(
+                                placeholder="Estoque",
+                                value=StockState.form_estoque,
+                                on_change=StockState.set_form_estoque,
+                            ),
+                            width="100%",
+                        ),
+                        rx.select(
+                            StockState.category_select_options,
+                            placeholder="Selecione uma categoria",
+                            value=StockState.form_categoria,
+                            on_change=StockState.set_form_categoria,
+                            width="100%",
+                        ),
+                        rx.cond(
+                            StockState.form_message != "",
+                            rx.text(StockState.form_message, color="#C24141", font_size="13px"),
+                            rx.fragment(),
+                        ),
+                        spacing="3",
+                        width="100%",
+                    ),
+                    rx.hstack(
+                        rx.dialog.close(
+                            rx.button("Cancelar", variant="soft", on_click=StockState.close_form)
+                        ),
+                        rx.button(
+                            rx.cond(StockState.is_saving, "Salvando...", "Salvar"),
+                            on_click=StockState.save_product,
+                            background="#55B77A",
+                            color="#FFFFFF",
+                        ),
+                        justify="end",
+                        width="100%",
+                    ),
+                ),
+                open=StockState.is_form_open,
+                on_open_change=StockState.set_is_form_open,
+            ),
+            rx.alert_dialog.root(
+                rx.alert_dialog.content(
+                    rx.alert_dialog.title("Excluir medicamento?"),
+                    rx.alert_dialog.description(
+                        "O medicamento será removido da listagem e marcado como inativo."
+                    ),
+                    rx.hstack(
+                        rx.alert_dialog.cancel(
+                            rx.button("Cancelar", variant="soft", on_click=StockState.close_delete)
+                        ),
+                        rx.alert_dialog.action(
+                            rx.button(
+                                "Excluir",
+                                color_scheme="red",
+                                on_click=StockState.delete_product,
+                            )
+                        ),
+                        justify="end",
+                        width="100%",
+                    ),
+                ),
+                open=StockState.is_delete_open,
+                on_open_change=StockState.set_is_delete_open,
             ),
             align="start",
             spacing="0",
@@ -1012,7 +1122,7 @@ app.add_page(index, route="/dashboard", on_load=AuthState.require_auth)
 app.add_page(
     stock_page,
     route="/estoque",
-    on_load=AuthState.require_auth,
+    on_load=[AuthState.require_auth, StockState.load_inventory],
 )
 app.add_page(
     lambda: module_placeholder("Vendas"),
