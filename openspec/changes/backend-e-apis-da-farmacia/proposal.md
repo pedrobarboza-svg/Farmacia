@@ -9,7 +9,7 @@ O domínio da farmácia define entidades e regras para funcionários, clientes, 
 - Definir o schema Xano isolado em tabelas `farmacia_final_*` para funcionários, clientes, categorias, produtos, pedidos e itens, incluindo tipos, relações, unicidade e valores iniciais das categorias.
 - Especificar APIs REST sob `/farmacia-final/*` para autenticação, cadastro e consulta de clientes, gestão de catálogo, montagem e fechamento de pedidos e relatórios de vendas.
 - Definir o fechamento do pedido como a operação que calcula valores, aplica desconto elegível, baixa estoque e muda o status para `concluido` dentro de uma transação.
-- Documentar no arquivo solicitado `openspec/changes/001-criar-tabelas-e-apis-xano.md` a referência técnica e os exemplos XanoScript para criação/aplicação no backend.
+- Documentar em [`reference.md`](./reference.md) a referência técnica e os exemplos XanoScript para criação/aplicação no backend.
 - Manter os objetos preexistentes do workspace Xano intactos: o destino contém outras aplicações e dados nas tabelas `pedido`, `cliente`, `produtos` e entidades legadas.
 - Não incluir processamento real de pagamentos; o estado `concluido` representa o fechamento simulado da venda, sem integração com gateway.
 

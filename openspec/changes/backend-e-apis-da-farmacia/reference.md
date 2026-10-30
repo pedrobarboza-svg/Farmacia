@@ -1,4 +1,4 @@
-# Change 001 — Schema e APIs Xano da farmaciaFinal
+# Backend e APIs da farmácia — referência técnica
 
 Esta é a referência de schema e deployment da Change 001. Os scripts XanoScript individuais em [xano/table/](../../xano/table) e [xano/api/farmacia/farmacia_final/](../../xano/api/farmacia/farmacia_final) são a fonte executável e foram validados pelo Xano Developer MCP.
 
@@ -82,20 +82,20 @@ O subtotal é calculado no backend. O desconto é `15%` arredondado a centavos s
 
 ## Scripts executáveis
 
-**Tabelas** — aplicar cada `.xs` em [xano/table/](../../xano/table):
+**Tabelas** — aplicar cada `.xs` em [xano/table/](../../../xano/table):
 
-- [farmacia_final_funcionario.xs](../../xano/table/farmacia_final_funcionario.xs)
-- [farmacia_final_cliente.xs](../../xano/table/farmacia_final_cliente.xs)
-- [farmacia_final_categorias.xs](../../xano/table/farmacia_final_categorias.xs)
-- [farmacia_final_produtos.xs](../../xano/table/farmacia_final_produtos.xs)
-- [farmacia_final_pedido.xs](../../xano/table/farmacia_final_pedido.xs)
-- [farmacia_final_item_pedido.xs](../../xano/table/farmacia_final_item_pedido.xs)
+- [farmacia_final_funcionario.xs](../../../xano/table/farmacia_final_funcionario.xs)
+- [farmacia_final_cliente.xs](../../../xano/table/farmacia_final_cliente.xs)
+- [farmacia_final_categorias.xs](../../../xano/table/farmacia_final_categorias.xs)
+- [farmacia_final_produtos.xs](../../../xano/table/farmacia_final_produtos.xs)
+- [farmacia_final_pedido.xs](../../../xano/table/farmacia_final_pedido.xs)
+- [farmacia_final_item_pedido.xs](../../../xano/table/farmacia_final_item_pedido.xs)
 
-**APIs** — os 22 endpoints `.xs` ficam em [xano/api/farmacia/farmacia_final/](../../xano/api/farmacia/farmacia_final). Cada arquivo declara seu caminho HTTP e usa o grupo existente `Farmácia`.
+**APIs** — os 22 endpoints `.xs` ficam em [xano/api/farmacia/farmacia_final/](../../../xano/api/farmacia/farmacia_final). Cada arquivo declara seu caminho HTTP e usa o grupo existente `Farmácia`.
 
 ## Aplicação controlada
 
-O snapshot de `v1` e o plano de reversão estão registrados no [design](./001-criar-tabelas-e-apis-xano/design.md). Faça somente push parcial dos arquivos namespaced, com transação habilitada. Primeiro gere e revise a prévia:
+O snapshot de `v1` e o plano de reversão estão registrados no [design](./design.md). Faça somente push parcial dos arquivos namespaced, com transação habilitada. Primeiro gere e revise a prévia:
 
 ```powershell
 xano workspace push -d .\xano -w 149200 -b v1 `
