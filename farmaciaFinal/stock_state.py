@@ -1,8 +1,10 @@
 import logging
 from typing import Any
+from urllib.parse import urlsplit
 
 import reflex as rx
 
+from farmaciaFinal.auth_state import AuthState
 from farmaciaFinal import xano_client
 
 logger = logging.getLogger(__name__)
@@ -26,6 +28,7 @@ class StockState(rx.State):
     selected_id: int = 0
     form_nome: str = ""
     form_descricao: str = ""
+    form_imagem_url: str = ""
     form_preco: str = ""
     form_estoque: str = ""
     form_categoria: str = ""
@@ -66,12 +69,21 @@ class StockState(rx.State):
 
     @rx.event
     async def load_inventory(self) -> None:
+        auth_state = await self.get_state(AuthState)
+        self.auth_token = auth_state._auth_token
         if not self.auth_token:
             return
         self.is_loading = True
         self.error_message = ""
         try:
-            categories = await xano_client.get_categories(token=self.auth_token)
+            try:
+                categories = await xano_client.initialize_categories(
+                    token=self.auth_token
+                )
+            except xano_client.XanoAPIError as error:
+                if error.status_code != 404:
+                    raise
+                categories = await xano_client.get_categories(token=self.auth_token)
             self.category_options = ["Todas"] + [category.nome for category in categories]
             self.category_ids = {category.nome: category.id for category in categories}
             products = await xano_client.get_products(token=self.auth_token)
@@ -100,6 +112,7 @@ class StockState(rx.State):
             "id": product.id,
             "nome": product.nome,
             "descricao": product.descricao,
+            "imagem_url": product.imagem_url,
             "categoria": category_name,
             "categoria_id": product.categoria_id,
             "quantidade": product.estoque,
@@ -112,6 +125,7 @@ class StockState(rx.State):
         self.selected_id = 0
         self.form_nome = ""
         self.form_descricao = ""
+        self.form_imagem_url = ""
         self.form_preco = ""
         self.form_estoque = ""
         self.form_categoria = ""
@@ -127,6 +141,7 @@ class StockState(rx.State):
         self.selected_id = product_id
         self.form_nome = product["nome"]
         self.form_descricao = product["descricao"]
+        self.form_imagem_url = product["imagem_url"]
         self.form_preco = f"{product['preco']:.2f}".replace(".", ",")
         self.form_estoque = str(product["quantidade"])
         self.form_categoria = product["categoria"]
@@ -159,6 +174,12 @@ class StockState(rx.State):
         if not self.form_nome.strip() or price < 0 or stock < 0:
             self.form_message = "Preencha os campos obrigatórios com valores válidos."
             return
+        image_url = self.form_imagem_url.strip()
+        if image_url:
+            parsed_url = urlsplit(image_url)
+            if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+                self.form_message = "Informe uma URL de imagem HTTP ou HTTPS válida."
+                return
         self.is_saving = True
         self.form_message = ""
         try:
@@ -168,6 +189,8 @@ class StockState(rx.State):
                     product_id=self.selected_id,
                     nome=self.form_nome,
                     descricao=self.form_descricao,
+                    imagem_url=image_url,
+                    remover_imagem=not image_url,
                     preco=price,
                     estoque=stock,
                     categoria_id=category_id,
@@ -177,6 +200,7 @@ class StockState(rx.State):
                     token=self.auth_token,
                     nome=self.form_nome,
                     descricao=self.form_descricao,
+                    imagem_url=image_url,
                     preco=price,
                     estoque=stock,
                     categoria_id=category_id,
@@ -199,10 +223,11 @@ class StockState(rx.State):
                 product_id=self.selected_id,
                 nome=product["nome"],
                 descricao=product["descricao"],
+                imagem_url=product["imagem_url"],
                 preco=product["preco"],
                 estoque=product["quantidade"],
                 categoria_id=product["categoria_id"],
-                ativo=False,
+                desativar=True,
             )
             self.is_delete_open = False
             await self.load_inventory()
@@ -231,6 +256,10 @@ class StockState(rx.State):
     @rx.event
     def set_form_descricao(self, value: str) -> None:
         self.form_descricao = value
+
+    @rx.event
+    def set_form_imagem_url(self, value: str) -> None:
+        self.form_imagem_url = value
 
     @rx.event
     def set_form_preco(self, value: str) -> None:

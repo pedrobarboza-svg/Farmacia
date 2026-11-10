@@ -32,6 +32,20 @@ O sistema SHALL manter produtos na tabela canónica `produtos`, associados a uma
 - **WHEN** um produto é criado ou editado com uma categoria que não existe
 - **THEN** o sistema rejeita a operação e não persiste a referência inválida
 
+### Requirement: Catálogo retorna imagem opcional do produto
+
+O sistema SHALL incluir a URL de imagem opcional de cada produto nas respostas de criação, edição e listagem do catálogo, preservando o comportamento atual quando a imagem não existir.
+
+#### Scenario: Listar produto com imagem
+
+- **WHEN** o catálogo consulta um produto que possui URL de imagem
+- **THEN** a resposta inclui a URL associada ao produto
+
+#### Scenario: Listar produto sem imagem
+
+- **WHEN** o catálogo consulta um produto sem URL de imagem
+- **THEN** a resposta inclui o produto sem uma referência de imagem utilizável e mantém preço, estoque e categoria
+
 ### Requirement: Listagem de produtos disponíveis no PDV
 O sistema SHALL listar no PDV apenas produtos ativos, permitindo filtro opcional por categoria, e SHALL retornar preço e estoque atuais para cada produto.
 

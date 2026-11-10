@@ -9,6 +9,41 @@ from farmaciaFinal import xano_client
 
 
 class XanoClientTests(unittest.IsolatedAsyncioTestCase):
+    async def test_initialize_categories_uses_authenticated_seed_endpoint(self):
+        observed = {}
+
+        def respond(request: httpx.Request) -> httpx.Response:
+            observed["request"] = request
+            return httpx.Response(
+                200,
+                json=[
+                    {"id": 1, "nome": "Bebidas"},
+                    {"id": 2, "nome": "Remédios"},
+                ],
+            )
+
+        with patch.dict(
+            os.environ,
+            {
+                "XANO_API_BASE_URL":
+                    "https://x8ki-letl-twmt.n7.xano.io/api:hVU-wK41"
+            },
+        ):
+            categories = await xano_client.initialize_categories(
+                token="private-token",
+                transport=httpx.MockTransport(respond),
+            )
+
+        request = observed["request"]
+        self.assertEqual(request.method, "POST")
+        self.assertEqual(
+            str(request.url),
+            "https://x8ki-letl-twmt.n7.xano.io/api:hVU-wK41/"
+            "farmacia-final/categorias/inicializar",
+        )
+        self.assertEqual(request.headers["Authorization"], "Bearer private-token")
+        self.assertEqual(categories[0], xano_client.Category(id=1, nome="Bebidas"))
+
     async def test_get_cargos_uses_public_endpoint_and_parses_options(self):
         observed = {}
 
@@ -225,6 +260,7 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
                         "categoria_id": 2,
                         "nome": "Paracetamol",
                         "descricao": "",
+                        "imagem_url": "https://example.com/paracetamol.png",
                         "preco": 12.9,
                         "estoque": 10,
                         "ativo": True,
@@ -238,8 +274,32 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertEqual(products[0].nome, "Paracetamol")
+        self.assertEqual(products[0].imagem_url, "https://example.com/paracetamol.png")
         self.assertEqual(observed["request"].headers["Authorization"], "Bearer private-token")
         self.assertEqual(observed["request"].method, "GET")
+
+    async def test_products_accept_legacy_response_without_image_url(self):
+        products = await xano_client.get_products(
+            token="private-token",
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200,
+                    json=[
+                        {
+                            "id": 5,
+                            "categoria_id": 2,
+                            "nome": "Produto legado",
+                            "descricao": None,
+                            "preco": 8.5,
+                            "estoque": 3,
+                            "ativo": True,
+                        }
+                    ],
+                )
+            ),
+        )
+
+        self.assertEqual(products[0].imagem_url, "")
 
     async def test_create_product_sends_expected_payload(self):
         observed = {}
@@ -253,6 +313,7 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
                     "categoria_id": 3,
                     "nome": "Vitamina C",
                     "descricao": "500mg",
+                    "imagem_url": "https://example.com/vitamina-c.png",
                     "preco": 19.9,
                     "estoque": 25,
                     "ativo": True,
@@ -266,6 +327,7 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
             preco=19.9,
             estoque=25,
             categoria_id=3,
+            imagem_url=" https://example.com/vitamina-c.png ",
             transport=httpx.MockTransport(respond),
         )
 
@@ -273,11 +335,47 @@ class XanoClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(json.loads(observed["request"].read()), {
             "nome": "Vitamina C",
             "descricao": "500mg",
+            "imagem_url": "https://example.com/vitamina-c.png",
             "preco": 19.9,
             "estoque": 25,
             "categoria_id": 3,
         })
         self.assertEqual(observed["request"].method, "POST")
+
+    async def test_update_product_sends_image_url_and_supports_clearing(self):
+        observed = {}
+
+        def respond(request: httpx.Request) -> httpx.Response:
+            observed["request"] = request
+            return httpx.Response(
+                200,
+                json={
+                    "id": 8,
+                    "categoria_id": 3,
+                    "nome": "Vitamina C",
+                    "descricao": "500mg",
+                    "imagem_url": "",
+                    "preco": 19.9,
+                    "estoque": 25,
+                    "ativo": True,
+                },
+            )
+
+        product = await xano_client.update_product(
+            token="private-token",
+            product_id=8,
+            nome="Vitamina C",
+            descricao="500mg",
+            imagem_url="",
+            preco=19.9,
+            estoque=25,
+            categoria_id=3,
+            transport=httpx.MockTransport(respond),
+        )
+
+        self.assertEqual(product.imagem_url, "")
+        self.assertEqual(json.loads(observed["request"].read())["imagem_url"], "")
+        self.assertEqual(observed["request"].method, "PATCH")
 
     async def test_default_base_url_uses_farmacia_api_group(self):
         with patch.dict(os.environ, {}, clear=True):

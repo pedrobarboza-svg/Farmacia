@@ -11,7 +11,7 @@ query "farmacia-final/produtos/{id}" verb=GET {
       field_name = "id"
       field_value = $input.id
     } as $produto
-
+  
     precondition ($produto != null) {
       error_type = "notfound"
       error = "PRODUTO_NAO_ENCONTRADO: o produto não existe."

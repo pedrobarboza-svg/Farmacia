@@ -408,6 +408,27 @@ def _stock_summary_card(title: str, value: rx.Var, context: str, icon: str, colo
 def _stock_row(medicine: rx.Var) -> rx.Component:
     status = medicine["status"]
     return rx.grid(
+        rx.cond(
+            medicine["imagem_url"] != "",
+            rx.image(
+                src=medicine["imagem_url"],
+                alt=medicine["nome"],
+                width="42px",
+                height="42px",
+                object_fit="cover",
+                border_radius="10px",
+            ),
+            rx.box(
+                rx.icon(tag="image", size=18, color="#94A3B8"),
+                width="42px",
+                height="42px",
+                display="flex",
+                align_items="center",
+                justify_content="center",
+                background="#F1F5F9",
+                border_radius="10px",
+            ),
+        ),
         rx.text(medicine["nome"], color="#102A43", font_weight="700"),
         rx.text(medicine["categoria"], color="#64748B"),
         rx.text(medicine["quantidade"], color="#102A43"),
@@ -433,7 +454,7 @@ def _stock_row(medicine: rx.Var) -> rx.Component:
             ),
             spacing="1",
         ),
-        columns="1.8fr 1.4fr 0.7fr 0.9fr 1fr 0.7fr",
+        columns="0.6fr 1.6fr 1.3fr 0.7fr 0.9fr 1fr 0.7fr",
         gap="4",
         align="center",
         padding="17px 22px",
@@ -540,6 +561,7 @@ def stock_page() -> rx.Component:
                             *[
                                 rx.text(label, color="#7B8794", font_size="12px", font_weight="700")
                                 for label in (
+                                    "Imagem",
                                     "Nome",
                                     "Categoria",
                                     "Quantidade",
@@ -549,7 +571,7 @@ def stock_page() -> rx.Component:
                                 )
                             ],
                             display="grid",
-                            grid_template_columns="1.8fr 1.4fr 0.7fr 0.9fr 1fr 0.7fr",
+                            grid_template_columns="0.6fr 1.6fr 1.3fr 0.7fr 0.9fr 1fr 0.7fr",
                             gap="4",
                             padding="16px 22px",
                             width="100%",
@@ -623,6 +645,12 @@ def stock_page() -> rx.Component:
                             on_change=StockState.set_form_categoria,
                             width="100%",
                         ),
+                        rx.input(
+                            placeholder="URL da imagem (opcional)",
+                            value=StockState.form_imagem_url,
+                            on_change=StockState.set_form_imagem_url,
+                            width="100%",
+                        ),
                         rx.cond(
                             StockState.form_message != "",
                             rx.text(StockState.form_message, color="#C24141", font_size="13px"),
@@ -630,6 +658,19 @@ def stock_page() -> rx.Component:
                         ),
                         spacing="3",
                         width="100%",
+                    ),
+                    rx.cond(
+                        StockState.form_imagem_url != "",
+                        rx.image(
+                            src=StockState.form_imagem_url,
+                            alt="Prévia da imagem do produto",
+                            width="96px",
+                            height="96px",
+                            object_fit="cover",
+                            border_radius="12px",
+                            border="1px solid #DCE5EA",
+                        ),
+                        rx.fragment(),
                     ),
                     rx.hstack(
                         rx.dialog.close(

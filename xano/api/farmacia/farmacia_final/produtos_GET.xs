@@ -8,7 +8,7 @@ query "farmacia-final/produtos" verb=GET {
 
   stack {
     db.query farmacia_final_produtos {
-      where = ($db.farmacia_final_produtos.ativo == true) && (($input.categoria_id == null) || ($db.farmacia_final_produtos.categoria_id == $input.categoria_id))
+      where = ($db.farmacia_final_produtos.ativo) && (($input.categoria_id == null) || ($db.farmacia_final_produtos.categoria_id == $input.categoria_id))
       sort = {nome: "asc"}
       return = {type: "list"}
     } as $produtos

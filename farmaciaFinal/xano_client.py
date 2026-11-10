@@ -57,6 +57,7 @@ class Product:
     categoria_id: int
     nome: str
     descricao: str
+    imagem_url: str
     preco: float
     estoque: int
     ativo: bool
@@ -150,6 +151,11 @@ def _product_from(payload: Any) -> Product:
     category_id = payload.get("categoria_id")
     nome = payload.get("nome")
     descricao = payload.get("descricao", "")
+    if descricao is None:
+        descricao = ""
+    imagem_url = payload.get("imagem_url", "")
+    if imagem_url is None:
+        imagem_url = ""
     preco = payload.get("preco")
     estoque = payload.get("estoque")
     ativo = payload.get("ativo", True)
@@ -158,6 +164,7 @@ def _product_from(payload: Any) -> Product:
         or type(category_id) is not int
         or not isinstance(nome, str)
         or not isinstance(descricao, str)
+        or not isinstance(imagem_url, str)
         or not isinstance(preco, (int, float))
         or isinstance(preco, bool)
         or type(estoque) is not int
@@ -169,6 +176,7 @@ def _product_from(payload: Any) -> Product:
         categoria_id=category_id,
         nome=nome,
         descricao=descricao,
+        imagem_url=imagem_url.strip(),
         preco=float(preco),
         estoque=estoque,
         ativo=ativo,
@@ -198,6 +206,32 @@ async def get_categories(
     return categories
 
 
+async def initialize_categories(
+    *,
+    token: str,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> list[Category]:
+    response = await _request(
+        "POST",
+        "/farmacia-final/categorias/inicializar",
+        token=token,
+        transport=transport,
+    )
+    if not isinstance(response, list):
+        raise XanoProtocolError("Xano returned an invalid initialized category list.")
+    categories: list[Category] = []
+    for record in response:
+        if (
+            not isinstance(record, dict)
+            or type(record.get("id")) is not int
+            or not isinstance(record.get("nome"), str)
+            or not record["nome"].strip()
+        ):
+            raise XanoProtocolError("Xano returned an invalid initialized category list.")
+        categories.append(Category(id=record["id"], nome=record["nome"].strip()))
+    return categories
+
+
 async def get_products(
     *,
     token: str,
@@ -218,6 +252,7 @@ async def create_product(
     token: str,
     nome: str,
     descricao: str,
+    imagem_url: str = "",
     preco: float,
     estoque: int,
     categoria_id: int,
@@ -230,6 +265,7 @@ async def create_product(
         payload={
             "nome": nome.strip(),
             "descricao": descricao.strip(),
+            "imagem_url": imagem_url.strip(),
             "preco": preco,
             "estoque": estoque,
             "categoria_id": categoria_id,
@@ -245,24 +281,33 @@ async def update_product(
     product_id: int,
     nome: str,
     descricao: str,
+    imagem_url: str = "",
+    remover_imagem: bool = False,
     preco: float,
     estoque: int,
     categoria_id: int,
     ativo: bool = True,
+    desativar: bool = False,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> Product:
+    payload = {
+        "nome": nome.strip(),
+        "descricao": descricao.strip(),
+        "imagem_url": imagem_url.strip(),
+        "preco": preco,
+        "estoque": estoque,
+        "categoria_id": categoria_id,
+        "ativo": ativo,
+    }
+    if remover_imagem:
+        payload["remover_imagem"] = True
+    if desativar:
+        payload["desativar"] = True
     response = await _request(
         "PATCH",
         f"/farmacia-final/produtos/{product_id}",
         token=token,
-        payload={
-            "nome": nome.strip(),
-            "descricao": descricao.strip(),
-            "preco": preco,
-            "estoque": estoque,
-            "categoria_id": categoria_id,
-            "ativo": ativo,
-        },
+        payload=payload,
         transport=transport,
     )
     return _product_from(response)

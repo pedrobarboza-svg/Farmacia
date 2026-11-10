@@ -5,6 +5,7 @@ table farmacia_final_produtos {
     int id
     text nome filters=trim
     text? descricao filters=trim
+    text? imagem_url filters=trim
     decimal preco filters=min:0
     int estoque filters=min:0
     bool ativo?=true
@@ -17,5 +18,6 @@ table farmacia_final_produtos {
     {type: "primary", field: [{name: "id"}]}
     {type: "btree", field: [{name: "categoria_id", op: "asc"}]}
   ]
+
   guid = "5vgvcpQyVHXc-ihvMxY5opsyiHo"
 }
